@@ -47,9 +47,24 @@ function delayMiddleware(req, res, next) {
 }
 
 var proxy = httpProxy.createProxyServer({
-  changeOrigin: true
+  changeOrigin: true,
+  secure: false
 });
 proxy.on('error', function (e, req, res) {
+  res.writeHead(502, {
+    'Content-Type': 'text/plain;charset=utf-8'
+  });
+  if (e.code === 'ECONNREFUSED') {
+    res.end('网关错误！请检查反向代理对应的后端服务器是否启动成功。');
+  } else {
+    res.end('网关错误！未知原因，代码: ' + e.code);
+  }
+});
+var secureProxy = httpProxy.createProxyServer({
+  changeOrigin: true,
+  secure: true
+});
+secureProxy.on('error', function (e, req, res) {
   res.writeHead(502, {
     'Content-Type': 'text/plain;charset=utf-8'
   });
@@ -86,7 +101,8 @@ function proxyMiddleware(req, res, next) {
       res.oldSetHeader(name, value);
     };
     req.url = req.url.replace(rule.url, rule.rewrite || '/$1');
-    proxy.web(req, res, {target: rule.proxy});
+    var _proxy = rule.secure ? secureProxy : proxy;
+    _proxy.web(req, res, {target: rule.proxy});
   } else {
     next();
   }

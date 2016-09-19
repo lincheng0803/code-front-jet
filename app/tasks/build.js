@@ -99,6 +99,13 @@ gulp.task('lint', function () {
     .pipe(plugins.jshint.reporter('jshint-stylish'));
 });
 
+gulp.task('jsonLint', function () {
+  // 第三方库的js不进行lint
+  return gulp.src(filesOf('json'))
+    .pipe(plugins.plumber())
+    .pipe(plugins.jsonLint());
+});
+
 gulp.task('webFont', function () {
   var fontName = 'app-icons';
   return gulp.src(env.folders.app + '/icons/**/*.svg')
@@ -310,6 +317,19 @@ gulp.task('buildManifest', function () {
     }));
 });
 
+gulp.task('buildI18n', function () {
+  return gulp.src(env.folders.app + '/i18n/**/*.json')
+    .pipe(plugins.plumber())
+    .pipe( plugins.jsonMin())
+    .pipe(gulp.dest(env.folders.build + '/i18n'));
+});
+
+gulp.task('compressIndex', function () {
+  return gulp.src(env.folders.build+ '/index.html')
+    .pipe(plugins.minifyHtml(htmlMinifyOptions))
+    .pipe(gulp.dest(env.folders.build))
+});
+
 gulp.task('compile', function (done) {
   // 全部串行，以免出现两个并发任务同时操作同一个文件的问题，这些步骤中速度不是最重要的
   plugins.runSequence('clean', 'bowerInstall', 'webFont', 'wireApp', 'wireBower', 'sass', 'coffee', 'es6', 'typescript', done);
@@ -317,7 +337,7 @@ gulp.task('compile', function (done) {
 
 gulp.task('build', function (done) {
   plugins.runSequence('compile', 'copyForks', 'copyLibraries', 'copyFonts', 'copyAssets', 'copyImages', 'copyViews',
-    'copyIcons', 'buildHome', 'buildManifest', 'preview.reload', done);
+    'copyIcons', 'buildI18n', 'buildHome', 'buildManifest', 'compressIndex', 'preview.reload', done);
 });
 
 var path = require('path');

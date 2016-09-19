@@ -106,4 +106,10 @@ gulp.task('watch', ['compile'], function () {
       runSequence('tddRestart');
     }
   });
+  watch([env.folders.app + "/**/*.json"], options, function (file) {
+    if (file.event === 'add' || file.event === 'unlink') {
+      // 添加删除文件时自动验证json
+      runSequence('jsonLint');
+    }
+  });
 });
